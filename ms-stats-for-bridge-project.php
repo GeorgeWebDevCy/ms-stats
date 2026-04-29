@@ -16,7 +16,7 @@
  * Plugin Name:       MS Stats For Bridge Project
  * Plugin URI:        https://www.georgenicolaou.me/plugins/ms-stats-for-bridge-project
  * Description:       This plugin create a menu in admin with stats and reports for Master Study
- * Version:           1.0.0
+ * Version:           1.1.0
  * Author:            George Nicolaou
  * Author URI:        https://www.georgenicolaou.me/
  * License:           GPL-2.0+
@@ -46,7 +46,7 @@ $ms_stats_update_checker->setBranch( 'main' );
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'MS_STATS_FOR_BRIDGE_PROJECT_VERSION', '1.0.0' );
+define( 'MS_STATS_FOR_BRIDGE_PROJECT_VERSION', '1.1.0' );
 
 /**
  * The code that runs during plugin activation.
@@ -84,10 +84,17 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-ms-stats-for-bridge-projec
  *
  * @since    1.0.0
  */
+function ms_stats_masterstudy_missing_notice() {
+	echo '<div class="notice notice-error"><p><strong>MS Stats for Bridge Project</strong> requires the MasterStudy LMS plugin to be installed and activated.</p></div>';
+}
+
 function run_ms_stats_for_bridge_project() {
+	if ( ! defined( 'MS_LMS_VERSION' ) ) {
+		add_action( 'admin_notices', 'ms_stats_masterstudy_missing_notice' );
+		return;
+	}
 
 	$plugin = new Ms_Stats_For_Bridge_Project();
 	$plugin->run();
-
 }
 run_ms_stats_for_bridge_project();

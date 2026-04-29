@@ -30,7 +30,16 @@ class Ms_Stats_For_Bridge_Project_Activator {
 	 * @since    1.0.0
 	 */
 	public static function activate() {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
+		if ( ! is_plugin_active( 'masterstudy-lms-learning-management-system/masterstudy-lms-learning-management-system.php' ) ) {
+			deactivate_plugins( plugin_basename( __FILE__ ) );
+			wp_die(
+				esc_html__( 'MS Stats for Bridge Project requires the MasterStudy LMS plugin to be installed and activated.', 'ms-stats-for-bridge-project' ),
+				esc_html__( 'Plugin Activation Error', 'ms-stats-for-bridge-project' ),
+				array( 'back_link' => true )
+			);
+		}
 	}
 
 }
