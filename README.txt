@@ -1,114 +1,85 @@
-=== Plugin Name ===
-Contributors: (this should be a list of wordpress.org userid's)
+=== MS Stats for Bridge Project ===
+Contributors: orionaselite
 Donate link: https://www.georgenicolaou.me/
-Tags: comments, spam
-Requires at least: 3.0.1
-Tested up to: 3.4
-Stable tag: 4.3
+Tags: masterstudy, lms, stats, reports, bridge project
+Requires at least: 5.8
+Tested up to: 6.7
+Requires PHP: 7.4
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Here is a short description of the plugin.  This should be no more than 150 characters.  No markup here.
+Admin dashboard with LMS statistics and reports for the Bridge Project — requires MasterStudy LMS.
 
 == Description ==
 
-This is the long description.  No limit, and you can use Markdown (as well as in the following sections).
+MS Stats for Bridge Project adds a dedicated admin reporting dashboard that surfaces key MasterStudy LMS metrics for the Bridge Project site.
 
-For backwards compatibility, if this section is missing, the full length of the short description will be used, and
-Markdown parsed.
+**Reports included:**
 
-A few notes about the sections above:
+* **Overview** — Total enrollments, enrolled users, and number of active courses at a glance.
+* **Users by Country** — Breakdown of enrolled users grouped by country (from MasterStudy profile data).
+* **Enrollments by Language** — Total enrollments grouped by language code.
+* **Course Progress** — Per-course average progress %, fully completed count, and completion rate with visual bar.
+* **Quiz Completion** — Per-course quiz pass rate across all attempts, with a visual pass-rate bar.
+* **Login Activity** — Count of active login sessions per enrolled user.
+* **Certificates** — Number of certificates issued per course.
 
-*   "Contributors" is a comma separated list of wp.org/wp-plugins.org usernames
-*   "Tags" is a comma separated list of tags that apply to the plugin
-*   "Requires at least" is the lowest version that the plugin will work on
-*   "Tested up to" is the highest version that you've *successfully used to test the plugin*. Note that it might work on
-higher versions... this is just the highest one you've verified.
-*   Stable tag should indicate the Subversion "tag" of the latest stable version, or "trunk," if you use `/trunk/` for
-stable.
+**Requirements:**
 
-    Note that the `readme.txt` of the stable tag is the one that is considered the defining one for the plugin, so
-if the `/trunk/readme.txt` file says that the stable tag is `4.3`, then it is `/tags/4.3/readme.txt` that'll be used
-for displaying information about the plugin.  In this situation, the only thing considered from the trunk `readme.txt`
-is the stable tag pointer.  Thus, if you develop in trunk, you can update the trunk `readme.txt` to reflect changes in
-your in-development version, without having that information incorrectly disclosed about the current stable version
-that lacks those changes -- as long as the trunk's `readme.txt` points to the correct stable tag.
-
-    If no stable tag is provided, it is assumed that trunk is stable, but you should specify "trunk" if that's where
-you put the stable version, in order to eliminate any doubt.
+* MasterStudy LMS (free) must be installed and active. The plugin will not activate without it.
 
 == Installation ==
 
-This section describes how to install the plugin and get it working.
-
-e.g.
-
-1. Upload `ms-stats-for-bridge-project.php` to the `/wp-content/plugins/` directory
-1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Place `<?php do_action('plugin_name_hook'); ?>` in your templates
+1. Upload the `ms-stats-for-bridge-project` folder to the `/wp-content/plugins/` directory.
+2. Ensure MasterStudy LMS is installed and active.
+3. Activate the plugin through the **Plugins** menu in WordPress.
+4. Navigate to **MS Stats** in the WordPress admin sidebar.
 
 == Frequently Asked Questions ==
 
-= A question that someone might have =
+= Does this plugin work without MasterStudy LMS? =
 
-An answer to that question.
+No. The plugin will refuse to activate if MasterStudy LMS is not installed and active. A notice is displayed if MasterStudy LMS is deactivated after activation.
 
-= What about foo bar? =
+= Where does the country data come from? =
 
-Answer to foo bar dilemma.
+From the `masterstudy_personal_data` user meta field that MasterStudy LMS stores when users fill in their profile.
+
+= Why does the Login Activity tab show "Active Sessions" instead of a full login history? =
+
+WordPress does not natively log historical login counts. The count shown reflects the number of active/recent login sessions stored in the `session_tokens` user meta key.
 
 == Screenshots ==
 
-1. This screen shot description corresponds to screenshot-1.(png|jpg|jpeg|gif). Note that the screenshot is taken from
-the /assets directory or the directory that contains the stable readme.txt (tags or trunk). Screenshots in the /assets
-directory take precedence. For example, `/assets/screenshot-1.png` would win over `/tags/4.3/screenshot-1.png`
-(or jpg, jpeg, gif).
-2. This is the second screen shot
+1. Overview tab — total enrollment statistics.
+2. Course Progress tab — per-course completion rates.
+3. Quiz Completion tab — pass rates per course.
 
 == Changelog ==
 
-= 1.0 =
-* A change since the previous version.
-* Another change.
+= 1.3.0 =
+* Updated README.txt and README.md with accurate plugin information.
 
-= 0.5 =
-* List versions from most recent at top to oldest at bottom.
+= 1.2.0 =
+* Added admin reporting dashboard with 7 tabbed reports.
+* Overview, Users by Country, Enrollments by Language, Course Progress, Quiz Completion, Login Activity, Certificates.
+
+= 1.1.0 =
+* Added MasterStudy LMS dependency check on activation (wp_die if missing).
+* Added runtime guard — shows admin notice if MasterStudy LMS is deactivated.
+* Added GitHub-based auto-update mechanism via plugin-update-checker.
+
+= 1.0.0 =
+* Initial release.
 
 == Upgrade Notice ==
 
-= 1.0 =
-Upgrade notices describe the reason a user should upgrade.  No more than 300 characters.
+= 1.3.0 =
+README updates only. No functional changes.
 
-= 0.5 =
-This version fixes a security related bug.  Upgrade immediately.
+= 1.2.0 =
+Major update: admin reporting dashboard added. Upgrade to access LMS stats.
 
-== Arbitrary section ==
-
-You may provide arbitrary sections, in the same format as the ones above.  This may be of use for extremely complicated
-plugins where more information needs to be conveyed that doesn't fit into the categories of "description" or
-"installation."  Arbitrary sections will be shown below the built-in sections outlined above.
-
-== A brief Markdown Example ==
-
-Ordered list:
-
-1. Some feature
-1. Another feature
-1. Something else about the plugin
-
-Unordered list:
-
-* something
-* something else
-* third thing
-
-Here's a link to [WordPress](http://wordpress.org/ "Your favorite software") and one to [Markdown's Syntax Documentation][markdown syntax].
-Titles are optional, naturally.
-
-[markdown syntax]: http://daringfireball.net/projects/markdown/syntax
-            "Markdown is what the parser uses to process much of the readme file"
-
-Markdown uses email style notation for blockquotes and I've been told:
-> Asterisks for *emphasis*. Double it up  for **strong**.
-
-`<?php code(); // goes in backticks ?>`
+= 1.1.0 =
+Adds MasterStudy LMS dependency enforcement and auto-update support.
