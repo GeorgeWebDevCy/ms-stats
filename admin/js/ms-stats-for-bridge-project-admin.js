@@ -165,7 +165,7 @@
 		doc.setTextColor( 255, 255, 255 );
 		doc.setFontSize( 8 );
 		doc.setFont( uFont, 'normal' );
-		doc.text( cfg.siteName || 'Bridge Project', 10, 9 );
+		doc.text( cfg.siteName || '', 10, 9 );
 
 		doc.setFontSize( 14 );
 		doc.setFont( uFont, 'bold' );

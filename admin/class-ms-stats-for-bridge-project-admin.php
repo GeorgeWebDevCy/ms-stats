@@ -285,7 +285,7 @@ class Ms_Stats_For_Bridge_Project_Admin {
 				'logoH'        => $logo_h,
 				'logoFmt'      => $logo_fmt,
 				'siteName'     => get_bloginfo( 'name' ),
-				'pluginTitle'  => 'MS Stats — Bridge Project',
+				'pluginTitle'  => 'MS Stats — ' . get_option( 'ms_stats_report_label', get_bloginfo( 'name' ) ),
 				'fontUrl'      => plugin_dir_url( __FILE__ ) . 'fonts/DejaVuSans.ttf',
 			)
 		);
@@ -319,6 +319,9 @@ class Ms_Stats_For_Bridge_Project_Admin {
 		}
 		if ( isset( $_POST['ms_stats_country_meta_key'] ) ) {
 			update_option( 'ms_stats_country_meta_key', sanitize_key( $_POST['ms_stats_country_meta_key'] ) );
+		}
+		if ( isset( $_POST['ms_stats_report_label'] ) ) {
+			update_option( 'ms_stats_report_label', sanitize_text_field( wp_unslash( $_POST['ms_stats_report_label'] ) ) );
 		}
 		if ( isset( $_POST['ms_stats_pdf_logo_url'] ) ) {
 			update_option( 'ms_stats_pdf_logo_url', esc_url_raw( $_POST['ms_stats_pdf_logo_url'] ) );

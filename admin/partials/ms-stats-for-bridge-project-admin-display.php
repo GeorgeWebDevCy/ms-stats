@@ -122,7 +122,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 
 ?>
 <div class="wrap ms-stats-page">
-	<h1><?php esc_html_e( 'MS LMS Stats — Bridge Project', 'ms-stats-for-bridge-project' ); ?></h1>
+	<h1><?php echo esc_html( 'MS LMS Stats — ' . get_option( 'ms_stats_report_label', get_bloginfo( 'name' ) ) ); ?></h1>
 
 	<nav class="nav-tab-wrapper">
 		<?php foreach ( $tabs as $tab_key => $tab_label ) : ?>
@@ -552,6 +552,19 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=' . $page_slug . '&tab=settings' ) ); ?>">
 				<?php wp_nonce_field( 'ms_stats_save_settings', '_ms_stats_nonce' ); ?>
 				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row">
+							<label for="ms_stats_report_label"><?php esc_html_e( 'Report Label', 'ms-stats-for-bridge-project' ); ?></label>
+						</th>
+						<td>
+							<input type="text" id="ms_stats_report_label" name="ms_stats_report_label"
+							       value="<?php echo esc_attr( get_option( 'ms_stats_report_label', get_bloginfo( 'name' ) ) ); ?>"
+							       class="regular-text">
+							<p class="description">
+								<?php esc_html_e( 'Shown in the admin page title and PDF footer. Defaults to the site name.', 'ms-stats-for-bridge-project' ); ?>
+							</p>
+						</td>
+					</tr>
 					<tr>
 						<th scope="row">
 							<label for="ms_stats_pdf_logo_url"><?php esc_html_e( 'PDF Logo URL', 'ms-stats-for-bridge-project' ); ?></label>
