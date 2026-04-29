@@ -84,20 +84,24 @@ class Ms_Stats_For_Bridge_Project_Admin {
 	 */
 	public function enqueue_scripts() {
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Ms_Stats_For_Bridge_Project_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Ms_Stats_For_Bridge_Project_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/ms-stats-for-bridge-project-admin.js', array( 'jquery' ), $this->version, false );
 
+	}
+
+	public function add_plugin_admin_menu() {
+		add_menu_page(
+			__( 'MS Stats', 'ms-stats-for-bridge-project' ),
+			__( 'MS Stats', 'ms-stats-for-bridge-project' ),
+			'manage_options',
+			'ms-stats-for-bridge-project',
+			array( $this, 'display_plugin_admin_page' ),
+			'dashicons-chart-bar',
+			26
+		);
+	}
+
+	public function display_plugin_admin_page() {
+		require_once plugin_dir_path( __FILE__ ) . 'partials/ms-stats-for-bridge-project-admin-display.php';
 	}
 
 }
