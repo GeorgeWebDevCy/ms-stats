@@ -104,4 +104,21 @@ class Ms_Stats_For_Bridge_Project_Admin {
 		require_once plugin_dir_path( __FILE__ ) . 'partials/ms-stats-for-bridge-project-admin-display.php';
 	}
 
+	public function handle_csv_export() {
+		if ( ! isset( $_GET['page'] ) || 'ms-stats-for-bridge-project' !== $_GET['page'] ) {
+			return;
+		}
+		if ( empty( $_GET['export'] ) || 'csv' !== $_GET['export'] ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Unauthorized' );
+		}
+		if ( empty( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( $_GET['_wpnonce'] ), 'ms_stats_export' ) ) {
+			wp_die( 'Invalid nonce' );
+		}
+		require_once plugin_dir_path( __FILE__ ) . 'partials/ms-stats-for-bridge-project-export-csv.php';
+		exit;
+	}
+
 }

@@ -8,6 +8,46 @@ global $wpdb;
 $active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'overview';
 $page_slug  = 'ms-stats-for-bridge-project';
 
+// Date range — stored/passed as Y-m-d, converted to unix timestamps for queries.
+$wp_date_format = get_option( 'date_format', 'Y-m-d' );
+$date_from_raw  = isset( $_GET['date_from'] ) ? sanitize_text_field( $_GET['date_from'] ) : '';
+$date_to_raw    = isset( $_GET['date_to'] ) ? sanitize_text_field( $_GET['date_to'] ) : '';
+
+$ts_from = $date_from_raw ? strtotime( $date_from_raw . ' 00:00:00' ) : 0;
+$ts_to   = $date_to_raw ? strtotime( $date_to_raw . ' 23:59:59' ) : 0;
+
+$date_where_unix = '';
+if ( $ts_from && $ts_to ) {
+	$date_where_unix = $wpdb->prepare( ' AND start_time BETWEEN %d AND %d ', $ts_from, $ts_to );
+} elseif ( $ts_from ) {
+	$date_where_unix = $wpdb->prepare( ' AND start_time >= %d ', $ts_from );
+} elseif ( $ts_to ) {
+	$date_where_unix = $wpdb->prepare( ' AND start_time <= %d ', $ts_to );
+}
+
+$date_where_datetime = '';
+if ( $ts_from && $ts_to ) {
+	$date_where_datetime = $wpdb->prepare( ' AND created_at BETWEEN %s AND %s ', gmdate( 'Y-m-d 00:00:00', $ts_from ), gmdate( 'Y-m-d 23:59:59', $ts_to ) );
+} elseif ( $ts_from ) {
+	$date_where_datetime = $wpdb->prepare( ' AND created_at >= %s ', gmdate( 'Y-m-d 00:00:00', $ts_from ) );
+} elseif ( $ts_to ) {
+	$date_where_datetime = $wpdb->prepare( ' AND created_at <= %s ', gmdate( 'Y-m-d 23:59:59', $ts_to ) );
+}
+
+function ms_stats_export_url( $tab ) {
+	$extra = '';
+	if ( ! empty( $_GET['date_from'] ) ) {
+		$extra .= '&date_from=' . rawurlencode( sanitize_text_field( $_GET['date_from'] ) );
+	}
+	if ( ! empty( $_GET['date_to'] ) ) {
+		$extra .= '&date_to=' . rawurlencode( sanitize_text_field( $_GET['date_to'] ) );
+	}
+	return wp_nonce_url(
+		admin_url( 'admin.php?page=ms-stats-for-bridge-project&tab=' . rawurlencode( $tab ) . '&export=csv' . $extra ),
+		'ms_stats_export'
+	);
+}
+
 $tabs = array(
 	'overview'     => __( 'Overview', 'ms-stats-for-bridge-project' ),
 	'countries'    => __( 'Users by Country', 'ms-stats-for-bridge-project' ),
@@ -33,13 +73,49 @@ $tabs = array(
 
 	<div class="tab-content" style="margin-top:20px;">
 
+		<?php
+		// Date range filter form — shown on every tab.
+		$base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
+		?>
+		<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" style="margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+			<input type="hidden" name="page" value="<?php echo esc_attr( $page_slug ); ?>">
+			<input type="hidden" name="tab"  value="<?php echo esc_attr( $active_tab ); ?>">
+			<label for="ms_date_from" style="font-weight:600;"><?php esc_html_e( 'From', 'ms-stats-for-bridge-project' ); ?></label>
+			<input type="date" id="ms_date_from" name="date_from" value="<?php echo esc_attr( $date_from_raw ); ?>" style="border:1px solid #c3c4c7;border-radius:3px;padding:4px 8px;">
+			<label for="ms_date_to" style="font-weight:600;"><?php esc_html_e( 'To', 'ms-stats-for-bridge-project' ); ?></label>
+			<input type="date" id="ms_date_to" name="date_to" value="<?php echo esc_attr( $date_to_raw ); ?>" style="border:1px solid #c3c4c7;border-radius:3px;padding:4px 8px;">
+			<button type="submit" class="button"><?php esc_html_e( 'Filter', 'ms-stats-for-bridge-project' ); ?></button>
+			<?php if ( $date_from_raw || $date_to_raw ) : ?>
+				<a href="<?php echo esc_url( $base_url ); ?>" class="button button-link"><?php esc_html_e( 'Clear', 'ms-stats-for-bridge-project' ); ?></a>
+			<?php endif; ?>
+			<?php if ( $date_from_raw || $date_to_raw ) : ?>
+				<em style="color:#50575e;">
+					<?php
+					if ( $date_from_raw && $date_to_raw ) {
+						printf(
+							/* translators: 1: from date, 2: to date */
+							esc_html__( 'Showing: %1$s — %2$s', 'ms-stats-for-bridge-project' ),
+							esc_html( date_i18n( $wp_date_format, $ts_from ) ),
+							esc_html( date_i18n( $wp_date_format, $ts_to ) )
+						);
+					} elseif ( $date_from_raw ) {
+						printf( esc_html__( 'From: %s', 'ms-stats-for-bridge-project' ), esc_html( date_i18n( $wp_date_format, $ts_from ) ) );
+					} else {
+						printf( esc_html__( 'To: %s', 'ms-stats-for-bridge-project' ), esc_html( date_i18n( $wp_date_format, $ts_to ) ) );
+					}
+					?>
+				</em>
+			<?php endif; ?>
+		</form>
+
 		<?php if ( 'overview' === $active_tab ) : ?>
 
 			<?php
-			$total_enrollments = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}stm_lms_user_courses" );
-			$total_users       = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->prefix}stm_lms_user_courses" );
-			$total_courses     = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT course_id) FROM {$wpdb->prefix}stm_lms_user_courses" );
+			$total_enrollments = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}stm_lms_user_courses WHERE 1=1 $date_where_unix" ); // phpcs:ignore
+			$total_users       = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->prefix}stm_lms_user_courses WHERE 1=1 $date_where_unix" ); // phpcs:ignore
+			$total_courses     = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT course_id) FROM {$wpdb->prefix}stm_lms_user_courses WHERE 1=1 $date_where_unix" ); // phpcs:ignore
 			?>
+			<p><a href="<?php echo esc_url( ms_stats_export_url( 'overview' ) ); ?>" class="button button-secondary">&#11015; Export to CSV</a></p>
 			<div style="display:flex;gap:20px;margin-bottom:30px;flex-wrap:wrap;">
 				<?php foreach ( array(
 					array( 'label' => __( 'Total Enrollments', 'ms-stats-for-bridge-project' ),       'value' => $total_enrollments ),
@@ -62,7 +138,8 @@ $tabs = array(
 					 FROM {$wpdb->users} u
 					 INNER JOIN {$wpdb->prefix}stm_lms_user_courses uc ON uc.user_id = u.ID
 					 LEFT JOIN {$wpdb->usermeta} um ON um.user_id = u.ID AND um.meta_key = %s
-					 GROUP BY u.ID",
+					 WHERE 1=1 $date_where_unix
+					 GROUP BY u.ID", // phpcs:ignore
 					'masterstudy_personal_data'
 				)
 			);
@@ -70,13 +147,12 @@ $tabs = array(
 			$country_counts = array();
 			foreach ( $meta_rows as $row ) {
 				$data    = maybe_unserialize( $row->meta_value );
-				$country = ( is_array( $data ) && ! empty( $data['country'] ) )
-					? trim( $data['country'] )
-					: __( 'Not specified', 'ms-stats-for-bridge-project' );
+				$country = ( is_array( $data ) && ! empty( $data['country'] ) ) ? trim( $data['country'] ) : __( 'Not specified', 'ms-stats-for-bridge-project' );
 				$country_counts[ $country ] = ( $country_counts[ $country ] ?? 0 ) + 1;
 			}
 			arsort( $country_counts );
 			?>
+			<p><a href="<?php echo esc_url( ms_stats_export_url( 'countries' ) ); ?>" class="button button-secondary">&#11015; Export to CSV</a></p>
 			<h2><?php esc_html_e( 'Total Users per Country', 'ms-stats-for-bridge-project' ); ?></h2>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
@@ -105,10 +181,11 @@ $tabs = array(
 			$lang_rows = $wpdb->get_results(
 				"SELECT lng_code, COUNT(*) AS total
 				 FROM {$wpdb->prefix}stm_lms_user_courses
-				 GROUP BY lng_code
-				 ORDER BY total DESC"
+				 WHERE 1=1 $date_where_unix
+				 GROUP BY lng_code ORDER BY total DESC" // phpcs:ignore
 			);
 			?>
+			<p><a href="<?php echo esc_url( ms_stats_export_url( 'language' ) ); ?>" class="button button-secondary">&#11015; Export to CSV</a></p>
 			<h2><?php esc_html_e( 'Total Enrollments per Language', 'ms-stats-for-bridge-project' ); ?></h2>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
@@ -147,10 +224,12 @@ $tabs = array(
 					1) AS completion_rate
 				 FROM {$wpdb->prefix}stm_lms_user_courses uc
 				 LEFT JOIN {$wpdb->posts} p ON p.ID = uc.course_id
+				 WHERE 1=1 $date_where_unix
 				 GROUP BY uc.course_id, p.post_title
-				 ORDER BY completion_rate DESC"
+				 ORDER BY completion_rate DESC" // phpcs:ignore
 			);
 			?>
+			<p><a href="<?php echo esc_url( ms_stats_export_url( 'progress' ) ); ?>" class="button button-secondary">&#11015; Export to CSV</a></p>
 			<h2><?php esc_html_e( 'Course Completion %', 'ms-stats-for-bridge-project' ); ?></h2>
 			<p style="color:#50575e;"><?php esc_html_e( 'progress_percent includes quiz grades as weighted by MasterStudy LMS.', 'ms-stats-for-bridge-project' ); ?></p>
 			<table class="wp-list-table widefat fixed striped">
@@ -204,10 +283,12 @@ $tabs = array(
 					1) AS pass_rate
 				 FROM {$wpdb->prefix}stm_lms_user_quizzes uq
 				 LEFT JOIN {$wpdb->posts} p ON p.ID = uq.course_id
+				 WHERE 1=1 $date_where_datetime
 				 GROUP BY uq.course_id, p.post_title
-				 ORDER BY pass_rate DESC"
+				 ORDER BY pass_rate DESC" // phpcs:ignore
 			);
 			?>
+			<p><a href="<?php echo esc_url( ms_stats_export_url( 'quizzes' ) ); ?>" class="button button-secondary">&#11015; Export to CSV</a></p>
 			<h2><?php esc_html_e( 'Quiz Completion per Course', 'ms-stats-for-bridge-project' ); ?></h2>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
@@ -249,7 +330,7 @@ $tabs = array(
 
 			<?php
 			$enrolled_users = $wpdb->get_col(
-				"SELECT DISTINCT user_id FROM {$wpdb->prefix}stm_lms_user_courses"
+				"SELECT DISTINCT user_id FROM {$wpdb->prefix}stm_lms_user_courses WHERE 1=1 $date_where_unix" // phpcs:ignore
 			);
 
 			$login_counts = array();
@@ -289,8 +370,9 @@ $tabs = array(
 				}
 			}
 			?>
+			<p><a href="<?php echo esc_url( ms_stats_export_url( 'logins' ) ); ?>" class="button button-secondary">&#11015; Export to CSV</a></p>
 			<h2><?php esc_html_e( 'Login Sessions per Enrolled User', 'ms-stats-for-bridge-project' ); ?></h2>
-			<p style="color:#50575e;"><?php esc_html_e( 'Count of active/recent login sessions stored by WordPress (session_tokens). Does not include expired or logged-out sessions.', 'ms-stats-for-bridge-project' ); ?></p>
+			<p style="color:#50575e;"><?php esc_html_e( 'Count of active/recent login sessions stored by WordPress (session_tokens). Date filter applies to enrollment start date.', 'ms-stats-for-bridge-project' ); ?></p>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
@@ -324,8 +406,7 @@ $tabs = array(
 					"SELECT meta_key, COUNT(*) AS issued
 					 FROM {$wpdb->usermeta}
 					 WHERE meta_key LIKE %s AND meta_value != ''
-					 GROUP BY meta_key
-					 ORDER BY issued DESC",
+					 GROUP BY meta_key ORDER BY issued DESC",
 					'stm_lms_certificate_code_%'
 				)
 			);
@@ -349,7 +430,9 @@ $tabs = array(
 				}
 			}
 			?>
+			<p><a href="<?php echo esc_url( ms_stats_export_url( 'certificates' ) ); ?>" class="button button-secondary">&#11015; Export to CSV</a></p>
 			<h2><?php esc_html_e( 'Certificates Issued per Course', 'ms-stats-for-bridge-project' ); ?></h2>
+			<p style="color:#50575e;"><?php esc_html_e( 'Certificate records have no date column — date filter does not apply to this report.', 'ms-stats-for-bridge-project' ); ?></p>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
