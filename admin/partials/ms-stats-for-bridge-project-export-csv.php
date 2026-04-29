@@ -71,6 +71,19 @@ function ms_stats_locale_name( $code ) {
 		'zh_TW' => 'Chinese (Traditional)',
 		'ja'    => 'Japanese',
 		'ko_KR' => 'Korean',
+		'mk_MK' => 'Macedonian', 'mk'    => 'Macedonian',
+		'sq'    => 'Albanian',   'sq_AL' => 'Albanian',
+		'sr_RS' => 'Serbian',    'sr'    => 'Serbian',
+		'bs_BA' => 'Bosnian',    'bs'    => 'Bosnian',
+		'ca'    => 'Catalan',    'eu'    => 'Basque',     'gl_ES' => 'Galician',
+		'is_IS' => 'Icelandic',  'ga'    => 'Irish',      'cy'    => 'Welsh',    'mt_MT' => 'Maltese',
+		'af'    => 'Afrikaans',  'id_ID' => 'Indonesian', 'ms_MY' => 'Malay',
+		'th'    => 'Thai',       'vi'    => 'Vietnamese', 'hi_IN' => 'Hindi',
+		'bn_BD' => 'Bengali',    'ur'    => 'Urdu',
+		'az'    => 'Azerbaijani','ka_GE' => 'Georgian',   'hy'    => 'Armenian',
+		'mn'    => 'Mongolian',  'kk'    => 'Kazakh',     'uz_UZ' => 'Uzbek',
+		'ckb'   => 'Kurdish',    'ps'    => 'Pashto',
+		'sw'    => 'Swahili',    'am_ET' => 'Amharic',
 	);
 	return $map[ $code ] ?? $code;
 }
