@@ -165,20 +165,47 @@ class Ms_Stats_For_Bridge_Project_Admin {
 					$logo_norm
 				);
 
+				// Convert raw image bytes to PNG if WebP (jsPDF doesn't support WebP).
+				$ms_stats_to_png = function( $raw ) {
+					if ( ! function_exists( 'imagecreatefromstring' ) ) {
+						return false;
+					}
+					// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+					$img = @imagecreatefromstring( $raw );
+					if ( ! $img ) {
+						return false;
+					}
+					// Preserve transparency.
+					imagesavealpha( $img, true );
+					ob_start();
+					imagepng( $img );
+					$png = ob_get_clean();
+					imagedestroy( $img );
+					return $png;
+				};
+
 				// Strategy 1: read from local filesystem (fast, no HTTP).
 				if ( file_exists( $local_path ) ) {
 					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 					$raw = file_get_contents( $local_path );
 					if ( false !== $raw ) {
-						$ext      = strtolower( pathinfo( $local_path, PATHINFO_EXTENSION ) );
-						$mime_map = array( 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'webp' => 'image/webp', 'gif' => 'image/gif' );
-						$mime     = $mime_map[ $ext ] ?? 'image/jpeg';
-						$logo_fmt = ( 'png' === $ext ) ? 'PNG' : ( ( 'webp' === $ext ) ? 'WEBP' : 'JPEG' );
+						$ext  = strtolower( pathinfo( $local_path, PATHINFO_EXTENSION ) );
+						// Convert WebP → PNG server-side; jsPDF does not support WebP.
+						if ( 'webp' === $ext ) {
+							$png = $ms_stats_to_png( $raw );
+							if ( $png ) {
+								$raw = $png;
+								$ext = 'png';
+							}
+						}
+						$mime_map  = array( 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif' );
+						$mime      = $mime_map[ $ext ] ?? 'image/jpeg';
+						$logo_fmt  = ( 'png' === $ext ) ? 'PNG' : 'JPEG';
 						$logo_data = 'data:' . $mime . ';base64,' . base64_encode( $raw );
-						$size      = @getimagesize( $local_path ); // phpcs:ignore
-						if ( $size ) {
-							$logo_w = (int) $size[0];
-							$logo_h = (int) $size[1];
+						$img_info  = @getimagesizefromstring( $raw ); // phpcs:ignore
+						if ( $img_info ) {
+							$logo_w = (int) $img_info[0];
+							$logo_h = (int) $img_info[1];
 						}
 					}
 				}
@@ -188,9 +215,16 @@ class Ms_Stats_For_Bridge_Project_Admin {
 					$response = wp_remote_get( $logo_url, array( 'timeout' => 8, 'sslverify' => false ) );
 					if ( ! is_wp_error( $response ) && 200 === (int) wp_remote_retrieve_response_code( $response ) ) {
 						$raw  = wp_remote_retrieve_body( $response );
-						$mime = strtok( wp_remote_retrieve_header( $response, 'content-type' ), ';' );
-						$mime = trim( $mime );
-						$logo_fmt  = ( false !== strpos( $mime, 'png' ) ) ? 'PNG' : ( ( false !== strpos( $mime, 'webp' ) ) ? 'WEBP' : 'JPEG' );
+						$mime = trim( strtok( wp_remote_retrieve_header( $response, 'content-type' ), ';' ) );
+						// Convert WebP → PNG server-side.
+						if ( false !== strpos( $mime, 'webp' ) ) {
+							$png = $ms_stats_to_png( $raw );
+							if ( $png ) {
+								$raw  = $png;
+								$mime = 'image/png';
+							}
+						}
+						$logo_fmt  = ( false !== strpos( $mime, 'png' ) ) ? 'PNG' : 'JPEG';
 						$logo_data = 'data:' . $mime . ';base64,' . base64_encode( $raw );
 						$img_info  = @getimagesizefromstring( $raw ); // phpcs:ignore
 						if ( $img_info ) {
