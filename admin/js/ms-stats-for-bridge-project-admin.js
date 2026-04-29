@@ -140,16 +140,23 @@
 		doc.rect( 0, 0, pageW, headerH, 'F' );
 
 		/* logo — base64 data URI pre-encoded server-side, no CORS */
-		if ( cfg.logoData && cfg.logoW && cfg.logoH ) {
-			/* 250px at 96dpi → ~66mm; cap height at headerH - 4 mm */
-			var logoWpx  = 250;
-			var logoWmm  = logoWpx * 25.4 / 96;
-			var logoHmm  = ( cfg.logoH / cfg.logoW ) * logoWmm;
-			if ( logoHmm > headerH - 4 ) {
-				logoHmm = headerH - 4;
-				logoWmm = ( cfg.logoW / cfg.logoH ) * logoHmm;
+		if ( cfg.logoData ) {
+			var lW = Number( cfg.logoW );   // explicit cast; string "0" is truthy but Number("0") = 0
+			var lH = Number( cfg.logoH );
+			var lWmm, lHmm;
+
+			if ( lW > 0 && lH > 0 ) {
+				lWmm = 40;                          // 40mm ≈ 150px at 96dpi — proper header logo size
+				lHmm = ( lH / lW ) * lWmm;
+				if ( lHmm > headerH - 4 ) {         // clamp height inside the header bar
+					lHmm = headerH - 4;
+					lWmm = ( lW / lH ) * lHmm;
+				}
+			} else {
+				lWmm = 40; lHmm = headerH - 6;     // fallback when dimensions unknown
 			}
-			doc.addImage( cfg.logoData, cfg.logoFmt || 'PNG', pageW - logoWmm - 10, ( headerH - logoHmm ) / 2, logoWmm, logoHmm );
+
+			doc.addImage( cfg.logoData, cfg.logoFmt || 'PNG', pageW - lWmm - 10, ( headerH - lHmm ) / 2, lWmm, lHmm );
 		}
 
 		/* header text */
