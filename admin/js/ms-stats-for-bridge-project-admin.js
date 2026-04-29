@@ -101,10 +101,15 @@
 
 		/* logo — base64 data URI pre-encoded server-side, no CORS */
 		if ( cfg.logoData && cfg.logoW && cfg.logoH ) {
-			var maxLogoH = 20;
-			var logoH    = maxLogoH;
-			var logoW    = ( cfg.logoW / cfg.logoH ) * logoH;
-			doc.addImage( cfg.logoData, cfg.logoFmt || 'PNG', pageW - logoW - 10, 7, logoW, logoH );
+			/* 250px at 96dpi → ~66mm; cap height at headerH - 4 mm */
+			var logoWpx  = 250;
+			var logoWmm  = logoWpx * 25.4 / 96;
+			var logoHmm  = ( cfg.logoH / cfg.logoW ) * logoWmm;
+			if ( logoHmm > headerH - 4 ) {
+				logoHmm = headerH - 4;
+				logoWmm = ( cfg.logoW / cfg.logoH ) * logoHmm;
+			}
+			doc.addImage( cfg.logoData, cfg.logoFmt || 'PNG', pageW - logoWmm - 10, ( headerH - logoHmm ) / 2, logoWmm, logoHmm );
 		}
 
 		/* header text */
