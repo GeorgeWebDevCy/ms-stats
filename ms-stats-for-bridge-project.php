@@ -30,6 +30,17 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
+require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
+
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+$ms_stats_update_checker = PucFactory::buildUpdateChecker(
+	'https://github.com/GeorgeWebDevCy/ms-stats-for-bridge-project',
+	__FILE__,
+	'ms-stats-for-bridge-project'
+);
+$ms_stats_update_checker->setBranch( 'main' );
+
 /**
  * Currently plugin version.
  * Start at version 1.0.0 and use SemVer - https://semver.org
