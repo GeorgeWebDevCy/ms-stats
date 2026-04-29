@@ -159,6 +159,7 @@ class Ms_Stats_For_Bridge_Project {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'handle_csv_export' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'save_settings' );
+		$this->loader->add_filter( 'plugin_action_links_ms-stats-for-bridge-project/ms-stats-for-bridge-project.php', $plugin_admin, 'plugin_action_links' );
 
 	}
 

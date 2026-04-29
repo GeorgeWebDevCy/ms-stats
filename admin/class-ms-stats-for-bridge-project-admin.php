@@ -347,4 +347,14 @@ class Ms_Stats_For_Bridge_Project_Admin {
 		exit;
 	}
 
+
+	public function plugin_action_links( $links ) {
+		$url     = admin_url( 'admin.php?page=ms-stats' );
+		$prepend = array(
+			'<a href="' . esc_url( $url ) . '">' . esc_html__( 'Overview', 'ms-stats' ) . '</a>',
+			'<a href="' . esc_url( $url . '&tab=settings' ) . '">' . esc_html__( 'Settings', 'ms-stats' ) . '</a>',
+		);
+		return array_merge( $prepend, $links );
+	}
+
 }
