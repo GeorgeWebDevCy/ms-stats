@@ -190,10 +190,11 @@ if ( 'overview' === $tab ) {
 		 ORDER BY completion_rate DESC" // phpcs:ignore
 	);
 
-	fputcsv( $out, array( 'Course', 'Enrolled', 'Avg Progress %', 'Fully Completed', 'Completion Rate %' ) );
+	fputcsv( $out, array( 'Course', 'Language', 'Enrolled', 'Avg Progress %', 'Fully Completed', 'Completion Rate %' ) );
 	foreach ( $rows as $row ) {
 		fputcsv( $out, array(
 			$row->course_title ?: 'Course #' . $row->course_id,
+			ms_stats_locale_name( $row->lang_code ?? '' ),
 			$row->enrolled,
 			$row->avg_progress,
 			$row->completed,
@@ -222,10 +223,11 @@ if ( 'overview' === $tab ) {
 		 ORDER BY pass_rate DESC" // phpcs:ignore
 	);
 
-	fputcsv( $out, array( 'Course', 'Unique Quizzes', 'Users Attempted', 'Total Attempts', 'Passed', 'Pass Rate %' ) );
+	fputcsv( $out, array( 'Course', 'Language', 'Unique Quizzes', 'Users Attempted', 'Total Attempts', 'Passed', 'Pass Rate %' ) );
 	foreach ( $rows as $row ) {
 		fputcsv( $out, array(
 			$row->course_title ?: 'Course #' . $row->course_id,
+			ms_stats_locale_name( $row->lang_code ?? '' ),
 			$row->total_quizzes,
 			$row->users_attempted,
 			$row->total_attempts,
@@ -264,12 +266,20 @@ if ( 'overview' === $tab ) {
 			$course_titles[ $post->ID ] = $post->post_title;
 		}
 	}
+	$course_langs = array();
+	if ( ! empty( $course_ids ) ) {
+		$lang_ph   = implode( ',', array_fill( 0, count( $course_ids ), '%d' ) );
+		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$lang_rows = $wpdb->get_results( $wpdb->prepare( "SELECT course_id, MAX(lng_code) AS lang_code FROM {$wpdb->prefix}stm_lms_user_courses WHERE course_id IN ($lang_ph) GROUP BY course_id", $course_ids ) );
+		foreach ( $lang_rows as $lr ) { $course_langs[ $lr->course_id ] = $lr->lang_code; }
+	}
 
-	fputcsv( $out, array( 'Course', 'Certificates Issued' ) );
+	fputcsv( $out, array( 'Course', 'Language', 'Certificates Issued' ) );
 	foreach ( $cert_rows as $row ) {
 		$course_id = (int) str_replace( 'stm_lms_certificate_code_', '', $row->meta_key );
 		fputcsv( $out, array(
 			$course_titles[ $course_id ] ?? 'Course #' . $course_id,
+			ms_stats_locale_name( $course_langs[ $course_id ] ?? '' ),
 			$row->issued,
 		) );
 	}

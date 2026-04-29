@@ -258,7 +258,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 				</tr></thead>
 				<tbody>
 					<?php if ( empty( $country_rows ) ) : ?>
-						<tr><td colspan="2"><?php esc_html_e( 'No data.', 'ms-stats' ); ?></td></tr>
+						<tr><td colspan="3"><?php esc_html_e( 'No data.', 'ms-stats' ); ?></td></tr>
 					<?php else : ?>
 						<?php foreach ( $country_rows as $row ) : ?>
 							<tr>
@@ -312,6 +312,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 				"SELECT
 					uc.course_id,
 					p.post_title AS course_title,
+					MAX(uc.lng_code) AS lang_code,
 					COUNT(DISTINCT uc.user_id) AS enrolled,
 					ROUND(AVG(uc.progress_percent), 1) AS avg_progress,
 					SUM(CASE WHEN uc.progress_percent = 100 THEN 1 ELSE 0 END) AS completed,
@@ -330,6 +331,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 			<table id="ms-stats-table-progress" class="ms-stats-table widefat">
 				<thead><tr>
 					<th><?php esc_html_e( 'Course', 'ms-stats' ); ?></th>
+					<th><?php esc_html_e( 'Language', 'ms-stats' ); ?></th>
 					<th><?php esc_html_e( 'Enrolled', 'ms-stats' ); ?></th>
 					<th><?php esc_html_e( 'Avg Progress', 'ms-stats' ); ?></th>
 					<th><?php esc_html_e( 'Fully Done', 'ms-stats' ); ?></th>
@@ -337,7 +339,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 				</tr></thead>
 				<tbody>
 					<?php if ( empty( $progress_rows ) ) : ?>
-						<tr><td colspan="5"><?php esc_html_e( 'No data.', 'ms-stats' ); ?></td></tr>
+						<tr><td colspan="7"><?php esc_html_e( 'No data.', 'ms-stats' ); ?></td></tr>
 					<?php else : ?>
 						<?php foreach ( $progress_rows as $row ) : ?>
 							<tr>
@@ -363,10 +365,11 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 				?>
 				<tfoot><tr>
 					<th><?php esc_html_e( 'Total', 'ms-stats' ); ?></th>
-					<th data-sum-col="1"><?php echo esc_html( $p_enrolled ); ?></th>
-					<th data-avg-col="2"><?php echo esc_html( $p_avg_prog ); ?>%</th>
-					<th data-sum-col="3"><?php echo esc_html( $p_completed ); ?></th>
-					<th data-rate-cols="3/1"><?php echo esc_html( $p_comp_rate ); ?>%</th>
+					<th></th>
+					<th data-sum-col="2"><?php echo esc_html( $p_enrolled ); ?></th>
+					<th data-avg-col="3"><?php echo esc_html( $p_avg_prog ); ?>%</th>
+					<th data-sum-col="4"><?php echo esc_html( $p_completed ); ?></th>
+					<th data-rate-cols="4/2"><?php echo esc_html( $p_comp_rate ); ?>%</th>
 				</tr></tfoot>
 				<?php endif; ?>
 			</table>
@@ -378,6 +381,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 				"SELECT
 					uq.course_id,
 					p.post_title AS course_title,
+					COALESCE(uc_lng.lng_code, '') AS lang_code,
 					COUNT(DISTINCT uq.quiz_id) AS total_quizzes,
 					COUNT(DISTINCT uq.user_id) AS users_attempted,
 					COUNT(*) AS total_attempts,
@@ -388,6 +392,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 					1) AS pass_rate
 				 FROM {$wpdb->prefix}stm_lms_user_quizzes uq
 				 LEFT JOIN {$wpdb->posts} p ON p.ID = uq.course_id
+				 LEFT JOIN (SELECT course_id, MAX(lng_code) AS lng_code FROM {$wpdb->prefix}stm_lms_user_courses GROUP BY course_id) uc_lng ON uc_lng.course_id = uq.course_id
 				 WHERE 1=1 $date_where_datetime
 				 GROUP BY uq.course_id, p.post_title
 				 ORDER BY pass_rate DESC" // phpcs:ignore
@@ -397,6 +402,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 			<table id="ms-stats-table-quizzes" class="ms-stats-table widefat">
 				<thead><tr>
 					<th><?php esc_html_e( 'Course', 'ms-stats' ); ?></th>
+					<th><?php esc_html_e( 'Language', 'ms-stats' ); ?></th>
 					<th><?php esc_html_e( 'Quizzes', 'ms-stats' ); ?></th>
 					<th><?php esc_html_e( 'Users Attempted', 'ms-stats' ); ?></th>
 					<th><?php esc_html_e( 'Total Attempts', 'ms-stats' ); ?></th>
@@ -433,11 +439,12 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 				?>
 				<tfoot><tr>
 					<th><?php esc_html_e( 'Total', 'ms-stats' ); ?></th>
-					<th data-sum-col="1"><?php echo esc_html( $q_quizzes ); ?></th>
-					<th data-sum-col="2"><?php echo esc_html( $q_attempted ); ?></th>
-					<th data-sum-col="3"><?php echo esc_html( $q_total ); ?></th>
-					<th data-sum-col="4"><?php echo esc_html( $q_passed ); ?></th>
-					<th data-rate-cols="4/3"><?php echo esc_html( $q_rate ); ?>%</th>
+					<th></th>
+					<th data-sum-col="2"><?php echo esc_html( $q_quizzes ); ?></th>
+					<th data-sum-col="3"><?php echo esc_html( $q_attempted ); ?></th>
+					<th data-sum-col="4"><?php echo esc_html( $q_total ); ?></th>
+					<th data-sum-col="5"><?php echo esc_html( $q_passed ); ?></th>
+					<th data-rate-cols="5/4"><?php echo esc_html( $q_rate ); ?>%</th>
 				</tr></tfoot>
 				<?php endif; ?>
 			</table>
@@ -458,17 +465,23 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 				return (int) str_replace( 'stm_lms_certificate_code_', '', $r->meta_key );
 			}, $cert_rows );
 			$course_titles = array();
+			$course_langs  = array();
 			if ( ! empty( $course_ids ) ) {
 				$placeholders = implode( ',', array_fill( 0, count( $course_ids ), '%d' ) );
 				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 				$posts = $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_title FROM {$wpdb->posts} WHERE ID IN ($placeholders)", $course_ids ) );
 				foreach ( $posts as $post ) { $course_titles[ $post->ID ] = $post->post_title; }
+				$lang_placeholders = implode( ',', array_fill( 0, count( $course_ids ), '%d' ) );
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+				$lang_rows = $wpdb->get_results( $wpdb->prepare( "SELECT course_id, MAX(lng_code) AS lang_code FROM {$wpdb->prefix}stm_lms_user_courses WHERE course_id IN ($lang_placeholders) GROUP BY course_id", $course_ids ) );
+				foreach ( $lang_rows as $lr ) { $course_langs[ $lr->course_id ] = $lr->lang_code; }
 			}
 			?>
 			<?php ms_stats_section_header( __( 'Certificates Issued per Course', 'ms-stats' ), 'ms-stats-table-certificates', 'certificates' ); ?>
 			<table id="ms-stats-table-certificates" class="ms-stats-table widefat">
 				<thead><tr>
 					<th><?php esc_html_e( 'Course', 'ms-stats' ); ?></th>
+					<th><?php esc_html_e( 'Language', 'ms-stats' ); ?></th>
 					<th><?php esc_html_e( 'Certificates Issued', 'ms-stats' ); ?></th>
 				</tr></thead>
 				<tbody>
@@ -479,13 +492,14 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 							$cid   = (int) str_replace( 'stm_lms_certificate_code_', '', $row->meta_key );
 							$title = $course_titles[ $cid ] ?? 'Course #' . $cid;
 							?>
-							<tr><td><?php echo esc_html( $title ); ?></td><td><?php echo esc_html( $row->issued ); ?></td></tr>
+							<tr><td><?php echo esc_html( $title ); ?></td><td><?php echo esc_html( ms_stats_locale_name( $course_langs[ $cid ] ?? '' ) ); ?></td><td><?php echo esc_html( $row->issued ); ?></td></tr>
 						<?php endforeach; ?>
 					<?php endif; ?>
 				</tbody>
 				<tfoot><tr>
 					<th><?php esc_html_e( 'Total', 'ms-stats' ); ?></th>
-					<th data-sum-col="1"><?php echo esc_html( array_sum( array_map( fn( $r ) => (int) $r->issued, $cert_rows ) ) ); ?></th>
+					<th></th>
+					<th data-sum-col="2"><?php echo esc_html( array_sum( array_map( fn( $r ) => (int) $r->issued, $cert_rows ) ) ); ?></th>
 				</tr></tfoot>
 			</table>
 
