@@ -32,13 +32,14 @@ if ( $ts_from && $ts_to ) {
 }
 
 $filenames = array(
-	'overview'     => 'ms-stats-overview',
-	'countries'    => 'ms-stats-users-by-country',
-	'language'     => 'ms-stats-enrollments-by-language',
-	'progress'     => 'ms-stats-course-progress',
-	'quizzes'      => 'ms-stats-quiz-completion',
-	'logins'       => 'ms-stats-login-activity',
-	'certificates' => 'ms-stats-certificates',
+	'overview'          => 'ms-stats-overview',
+	'countries'         => 'ms-stats-users-by-country',
+	'language'          => 'ms-stats-enrollments-by-language',
+	'progress'          => 'ms-stats-course-progress',
+	'quizzes'           => 'ms-stats-quiz-completion',
+	'logins'            => 'ms-stats-login-activity',
+	'certificates'      => 'ms-stats-certificates',
+	'user_certificates' => 'ms-stats-certificates-per-user',
 );
 
 $filename = ( $filenames[ $tab ] ?? 'ms-stats-export' ) . '-' . gmdate( 'Y-m-d' ) . '.csv';
@@ -270,6 +271,39 @@ if ( 'overview' === $tab ) {
 		fputcsv( $out, array(
 			$course_titles[ $course_id ] ?? 'Course #' . $course_id,
 			$row->issued,
+		) );
+	}
+
+} elseif ( 'user_certificates' === $tab ) {
+
+	$rows = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT
+				u.display_name,
+				u.user_email,
+				REPLACE(um.meta_key, %s, '') AS course_id,
+				p.post_title AS course_title,
+				um.meta_value AS certificate_code
+			 FROM {$wpdb->usermeta} um
+			 INNER JOIN {$wpdb->users} u ON u.ID = um.user_id
+			 LEFT JOIN {$wpdb->posts} p
+			 	ON p.ID = CAST(REPLACE(um.meta_key, %s, '') AS UNSIGNED)
+			 WHERE um.meta_key LIKE %s
+			 AND um.meta_value != ''
+			 ORDER BY u.display_name ASC, p.post_title ASC",
+			'stm_lms_certificate_code_',
+			'stm_lms_certificate_code_',
+			'stm_lms_certificate_code_%'
+		)
+	);
+
+	fputcsv( $out, array( 'User', 'Email', 'Course', 'Certificate Code' ) );
+	foreach ( $rows as $row ) {
+		fputcsv( $out, array(
+			$row->display_name,
+			$row->user_email,
+			$row->course_title ?: 'Course #' . $row->course_id,
+			$row->certificate_code,
 		) );
 	}
 }

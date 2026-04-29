@@ -57,7 +57,8 @@ $tabs = array(
 	'progress'     => __( 'Course Progress', 'ms-stats-for-bridge-project' ),
 	'quizzes'      => __( 'Quiz Completion', 'ms-stats-for-bridge-project' ),
 	'logins'       => __( 'Login Activity', 'ms-stats-for-bridge-project' ),
-	'certificates' => __( 'Certificates', 'ms-stats-for-bridge-project' ),
+	'certificates'      => __( 'Certificates', 'ms-stats-for-bridge-project' ),
+	'user_certificates' => __( 'Certificates per User', 'ms-stats-for-bridge-project' ),
 );
 
 ?>
@@ -455,6 +456,59 @@ $tabs = array(
 							<tr>
 								<td><?php echo esc_html( $title ); ?></td>
 								<td><?php echo esc_html( $row->issued ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</tbody>
+			</table>
+
+		<?php elseif ( 'user_certificates' === $active_tab ) : ?>
+
+			<?php
+			$user_cert_rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT
+						u.ID AS user_id,
+						u.display_name,
+						u.user_email,
+						REPLACE(um.meta_key, %s, '') AS course_id,
+						p.post_title AS course_title,
+						um.meta_value AS certificate_code
+					 FROM {$wpdb->usermeta} um
+					 INNER JOIN {$wpdb->users} u ON u.ID = um.user_id
+					 LEFT JOIN {$wpdb->posts} p
+					 	ON p.ID = CAST(REPLACE(um.meta_key, %s, '') AS UNSIGNED)
+					 WHERE um.meta_key LIKE %s
+					 AND um.meta_value != ''
+					 ORDER BY u.display_name ASC, p.post_title ASC",
+					'stm_lms_certificate_code_',
+					'stm_lms_certificate_code_',
+					'stm_lms_certificate_code_%'
+				)
+			);
+			?>
+			<p><a href="<?php echo esc_url( ms_stats_export_url( 'user_certificates' ) ); ?>" class="button button-secondary">&#11015; Export to CSV</a></p>
+			<h2><?php esc_html_e( 'Certificates per User', 'ms-stats-for-bridge-project' ); ?></h2>
+			<p style="color:#50575e;"><?php esc_html_e( 'No date column available — date filter does not apply to this report.', 'ms-stats-for-bridge-project' ); ?></p>
+			<table class="wp-list-table widefat fixed striped">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'User', 'ms-stats-for-bridge-project' ); ?></th>
+						<th><?php esc_html_e( 'Email', 'ms-stats-for-bridge-project' ); ?></th>
+						<th><?php esc_html_e( 'Course', 'ms-stats-for-bridge-project' ); ?></th>
+						<th style="width:180px;"><?php esc_html_e( 'Certificate Code', 'ms-stats-for-bridge-project' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php if ( empty( $user_cert_rows ) ) : ?>
+						<tr><td colspan="4"><?php esc_html_e( 'No certificates found.', 'ms-stats-for-bridge-project' ); ?></td></tr>
+					<?php else : ?>
+						<?php foreach ( $user_cert_rows as $row ) : ?>
+							<tr>
+								<td><?php echo esc_html( $row->display_name ); ?></td>
+								<td><?php echo esc_html( $row->user_email ); ?></td>
+								<td><?php echo esc_html( $row->course_title ?: 'Course #' . $row->course_id ); ?></td>
+								<td><code><?php echo esc_html( $row->certificate_code ); ?></code></td>
 							</tr>
 						<?php endforeach; ?>
 					<?php endif; ?>
