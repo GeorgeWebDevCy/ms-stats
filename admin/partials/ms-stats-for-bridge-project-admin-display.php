@@ -344,6 +344,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 						<?php foreach ( $progress_rows as $row ) : ?>
 							<tr>
 								<td><?php echo esc_html( $row->course_title ?: 'Course #' . $row->course_id ); ?></td>
+								<td><?php echo esc_html( ms_stats_locale_name( $row->lang_code ?? '' ) ); ?></td>
 								<td><?php echo esc_html( $row->enrolled ); ?></td>
 								<td><?php echo esc_html( $row->avg_progress ); ?>%</td>
 								<td><?php echo esc_html( $row->completed ); ?></td>
@@ -416,6 +417,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 						<?php foreach ( $quiz_rows as $row ) : ?>
 							<tr>
 								<td><?php echo esc_html( $row->course_title ?: 'Course #' . $row->course_id ); ?></td>
+								<td><?php echo esc_html( ms_stats_locale_name( $row->lang_code ?? '' ) ); ?></td>
 								<td><?php echo esc_html( $row->total_quizzes ); ?></td>
 								<td><?php echo esc_html( $row->users_attempted ); ?></td>
 								<td><?php echo esc_html( $row->total_attempts ); ?></td>
