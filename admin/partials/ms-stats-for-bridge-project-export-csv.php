@@ -276,26 +276,33 @@ if ( 'overview' === $tab ) {
 
 } elseif ( 'user_certificates' === $tab ) {
 
+	$cert_user_id = isset( $_GET['cert_user_id'] ) ? (int) $_GET['cert_user_id'] : 0;
+	$uc_where     = 'WHERE um.meta_key LIKE %s AND um.meta_value != %s';
+	$uc_params    = array( 'stm_lms_certificate_code_%', '' );
+	if ( $cert_user_id ) {
+		$uc_where    .= ' AND um.user_id = %d';
+		$uc_params[]  = $cert_user_id;
+	}
+
+	// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 	$rows = $wpdb->get_results(
 		$wpdb->prepare(
 			"SELECT
 				u.display_name,
 				u.user_email,
-				REPLACE(um.meta_key, %s, '') AS course_id,
+				REPLACE(um.meta_key, 'stm_lms_certificate_code_', '') AS course_id,
 				p.post_title AS course_title,
 				um.meta_value AS certificate_code
 			 FROM {$wpdb->usermeta} um
 			 INNER JOIN {$wpdb->users} u ON u.ID = um.user_id
 			 LEFT JOIN {$wpdb->posts} p
-			 	ON p.ID = CAST(REPLACE(um.meta_key, %s, '') AS UNSIGNED)
-			 WHERE um.meta_key LIKE %s
-			 AND um.meta_value != ''
+			 	ON p.ID = CAST(REPLACE(um.meta_key, 'stm_lms_certificate_code_', '') AS UNSIGNED)
+			 $uc_where
 			 ORDER BY u.display_name ASC, p.post_title ASC",
-			'stm_lms_certificate_code_',
-			'stm_lms_certificate_code_',
-			'stm_lms_certificate_code_%'
+			$uc_params
 		)
 	);
+	// phpcs:enable
 
 	fputcsv( $out, array( 'User', 'Email', 'Course', 'Certificate Code' ) );
 	foreach ( $rows as $row ) {

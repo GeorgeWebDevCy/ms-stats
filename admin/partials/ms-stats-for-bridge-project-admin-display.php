@@ -15,6 +15,24 @@ $date_to_raw    = isset( $_GET['date_to'] ) ? sanitize_text_field( $_GET['date_t
 $display_from   = $date_from_raw ? date( 'd/m/Y', strtotime( $date_from_raw ) ) : '';
 $display_to     = $date_to_raw ? date( 'd/m/Y', strtotime( $date_to_raw ) ) : '';
 
+// User filter for Certificates per User tab.
+$cert_user_id = isset( $_GET['cert_user_id'] ) ? (int) $_GET['cert_user_id'] : 0;
+
+// Pre-fetch cert users for dropdown (only needed on that tab).
+$cert_users = array();
+if ( 'user_certificates' === $active_tab ) {
+	$cert_users = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT DISTINCT u.ID, u.display_name
+			 FROM {$wpdb->users} u
+			 INNER JOIN {$wpdb->usermeta} um ON um.user_id = u.ID
+			 WHERE um.meta_key LIKE %s AND um.meta_value != ''
+			 ORDER BY u.display_name ASC",
+			'stm_lms_certificate_code_%'
+		)
+	);
+}
+
 $ts_from = $date_from_raw ? strtotime( $date_from_raw . ' 00:00:00' ) : 0;
 $ts_to   = $date_to_raw ? strtotime( $date_to_raw . ' 23:59:59' ) : 0;
 
@@ -43,6 +61,9 @@ function ms_stats_export_url( $tab ) {
 	}
 	if ( ! empty( $_GET['date_to'] ) ) {
 		$extra .= '&date_to=' . rawurlencode( sanitize_text_field( $_GET['date_to'] ) );
+	}
+	if ( ! empty( $_GET['cert_user_id'] ) ) {
+		$extra .= '&cert_user_id=' . (int) $_GET['cert_user_id'];
 	}
 	return wp_nonce_url(
 		admin_url( 'admin.php?page=ms-stats-for-bridge-project&tab=' . rawurlencode( $tab ) . '&export=csv' . $extra ),
@@ -90,7 +111,18 @@ $tabs = array(
 			<input type="text" id="ms_date_to_display" class="ms-stats-datepicker" placeholder="dd/mm/yyyy" autocomplete="off" data-alt-field="#ms_date_to" value="<?php echo esc_attr( $display_to ); ?>" style="width:110px;border:1px solid #c3c4c7;border-radius:3px;padding:4px 8px;">
 			<input type="hidden" id="ms_date_to" name="date_to" value="<?php echo esc_attr( $date_to_raw ); ?>">
 			<button type="submit" class="button"><?php esc_html_e( 'Filter', 'ms-stats-for-bridge-project' ); ?></button>
-			<?php if ( $date_from_raw || $date_to_raw ) : ?>
+			<?php if ( 'user_certificates' === $active_tab ) : ?>
+				<label for="ms_cert_user" style="font-weight:600;"><?php esc_html_e( 'User', 'ms-stats-for-bridge-project' ); ?></label>
+				<select id="ms_cert_user" name="cert_user_id" style="border:1px solid #c3c4c7;border-radius:3px;padding:4px 8px;">
+					<option value=""><?php esc_html_e( '— All Users —', 'ms-stats-for-bridge-project' ); ?></option>
+					<?php foreach ( $cert_users as $cu ) : ?>
+						<option value="<?php echo esc_attr( $cu->ID ); ?>" <?php selected( $cert_user_id, $cu->ID ); ?>>
+							<?php echo esc_html( $cu->display_name ); ?>
+						</option>
+					<?php endforeach; ?>
+				</select>
+			<?php endif; ?>
+			<?php if ( $date_from_raw || $date_to_raw || $cert_user_id ) : ?>
 				<a href="<?php echo esc_url( $base_url ); ?>" class="button button-link"><?php esc_html_e( 'Clear', 'ms-stats-for-bridge-project' ); ?></a>
 			<?php endif; ?>
 			<?php if ( $date_from_raw || $date_to_raw ) : ?>
@@ -465,51 +497,74 @@ $tabs = array(
 		<?php elseif ( 'user_certificates' === $active_tab ) : ?>
 
 			<?php
+			$uc_where  = 'WHERE um.meta_key LIKE %s AND um.meta_value != %s';
+			$uc_params = array( 'stm_lms_certificate_code_%', '' );
+			if ( $cert_user_id ) {
+				$uc_where   .= ' AND um.user_id = %d';
+				$uc_params[] = $cert_user_id;
+			}
+
+			// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 			$user_cert_rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT
 						u.ID AS user_id,
 						u.display_name,
 						u.user_email,
-						REPLACE(um.meta_key, %s, '') AS course_id,
+						REPLACE(um.meta_key, 'stm_lms_certificate_code_', '') AS course_id,
 						p.post_title AS course_title,
 						um.meta_value AS certificate_code
 					 FROM {$wpdb->usermeta} um
 					 INNER JOIN {$wpdb->users} u ON u.ID = um.user_id
 					 LEFT JOIN {$wpdb->posts} p
-					 	ON p.ID = CAST(REPLACE(um.meta_key, %s, '') AS UNSIGNED)
-					 WHERE um.meta_key LIKE %s
-					 AND um.meta_value != ''
+					 	ON p.ID = CAST(REPLACE(um.meta_key, 'stm_lms_certificate_code_', '') AS UNSIGNED)
+					 $uc_where
 					 ORDER BY u.display_name ASC, p.post_title ASC",
-					'stm_lms_certificate_code_',
-					'stm_lms_certificate_code_',
-					'stm_lms_certificate_code_%'
+					$uc_params
 				)
 			);
+			// phpcs:enable
+
+			// Group rows by user_id for rowspan rendering.
+			$grouped_certs = array();
+			foreach ( $user_cert_rows as $row ) {
+				$grouped_certs[ $row->user_id ][] = $row;
+			}
 			?>
 			<p><a href="<?php echo esc_url( ms_stats_export_url( 'user_certificates' ) ); ?>" class="button button-secondary">&#11015; Export to CSV</a></p>
 			<h2><?php esc_html_e( 'Certificates per User', 'ms-stats-for-bridge-project' ); ?></h2>
-			<p style="color:#50575e;"><?php esc_html_e( 'No date column available — date filter does not apply to this report.', 'ms-stats-for-bridge-project' ); ?></p>
+			<p style="color:#50575e;"><?php esc_html_e( 'Date filter does not apply — no date column on certificate records.', 'ms-stats-for-bridge-project' ); ?></p>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
-						<th><?php esc_html_e( 'User', 'ms-stats-for-bridge-project' ); ?></th>
-						<th><?php esc_html_e( 'Email', 'ms-stats-for-bridge-project' ); ?></th>
+						<th style="width:160px;"><?php esc_html_e( 'User', 'ms-stats-for-bridge-project' ); ?></th>
+						<th style="width:200px;"><?php esc_html_e( 'Email', 'ms-stats-for-bridge-project' ); ?></th>
 						<th><?php esc_html_e( 'Course', 'ms-stats-for-bridge-project' ); ?></th>
 						<th style="width:180px;"><?php esc_html_e( 'Certificate Code', 'ms-stats-for-bridge-project' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
-					<?php if ( empty( $user_cert_rows ) ) : ?>
+					<?php if ( empty( $grouped_certs ) ) : ?>
 						<tr><td colspan="4"><?php esc_html_e( 'No certificates found.', 'ms-stats-for-bridge-project' ); ?></td></tr>
 					<?php else : ?>
-						<?php foreach ( $user_cert_rows as $row ) : ?>
-							<tr>
-								<td><?php echo esc_html( $row->display_name ); ?></td>
-								<td><?php echo esc_html( $row->user_email ); ?></td>
-								<td><?php echo esc_html( $row->course_title ?: 'Course #' . $row->course_id ); ?></td>
-								<td><code><?php echo esc_html( $row->certificate_code ); ?></code></td>
-							</tr>
+						<?php foreach ( $grouped_certs as $uid => $rows ) :
+							$count = count( $rows );
+							$first = true;
+							foreach ( $rows as $row ) : ?>
+								<tr>
+									<?php if ( $first ) : ?>
+										<td rowspan="<?php echo esc_attr( $count ); ?>" style="vertical-align:top;font-weight:600;border-right:2px solid #c3c4c7;">
+											<?php echo esc_html( $row->display_name ); ?>
+										</td>
+										<td rowspan="<?php echo esc_attr( $count ); ?>" style="vertical-align:top;border-right:2px solid #c3c4c7;">
+											<?php echo esc_html( $row->user_email ); ?>
+										</td>
+										<?php $first = false; ?>
+									<?php endif; ?>
+									<td><?php echo esc_html( $row->course_title ?: 'Course #' . $row->course_id ); ?></td>
+									<td><code><?php echo esc_html( $row->certificate_code ); ?></code></td>
+								</tr>
+							<?php endforeach; ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
 				</tbody>
