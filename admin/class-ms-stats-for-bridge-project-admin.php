@@ -66,8 +66,8 @@ class Ms_Stats_For_Bridge_Project_Admin {
 		}
 
 		$stm       = get_option( 'stm_lms_settings', array() );
-		$primary   = ! empty( $stm['main_color'] ) ? sanitize_hex_color( $stm['main_color'] ) : '#385bce';
-		$secondary = ! empty( $stm['secondary_color'] ) ? sanitize_hex_color( $stm['secondary_color'] ) : '#17d292';
+		$primary   = sanitize_hex_color( $stm['main_color'] ?? '' ) ?: '#385bce';
+		$secondary = sanitize_hex_color( $stm['secondary_color'] ?? '' ) ?: '#17d292';
 
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/ms-stats-for-bridge-project-admin.css', array(), $this->version, 'all' );
 		wp_enqueue_style( 'jquery-ui-style', 'https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.min.css', array(), '1.13.3' );
@@ -80,7 +80,7 @@ class Ms_Stats_For_Bridge_Project_Admin {
 			.ms-stats-page .nav-tab-wrapper{background:#fff;border:1px solid #dcdcde;border-bottom:none;border-radius:8px 8px 0 0;padding:4px 8px 0;display:flex;flex-wrap:wrap;gap:2px;}
 			.ms-stats-page .nav-tab{border:none;border-bottom:3px solid transparent;border-radius:4px 4px 0 0;background:transparent;color:#50575e;padding:10px 16px;margin:0;font-weight:500;font-size:13px;transition:color .15s,border-color .15s;text-decoration:none;}
 			.ms-stats-page .nav-tab:hover{color:{$primary};background:rgba(56,91,206,.06);}
-			.ms-stats-page .nav-tab-active{color:{$primary}!important;border-bottom-color:{$primary}!important;font-weight:600;}
+			.ms-stats-page .nav-tab-active{color:{$primary}!important;border-bottom-color:{$primary}!important;font-weight:600;background:#fff!important;}
 			.ms-stats-tab-panel{background:#fff;border:1px solid #dcdcde;border-top:none;border-radius:0 0 8px 8px;padding:24px;min-height:200px;}
 			.ms-stats-filter-bar{background:#f6f7f7;border:1px solid #dcdcde;border-radius:6px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 			.ms-stats-filter-bar label{font-weight:600;color:#1e1e1e;font-size:13px;}

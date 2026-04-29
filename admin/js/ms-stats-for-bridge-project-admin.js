@@ -28,6 +28,7 @@
 	}
 
 	function updateFooter( api ) {
+		try {
 		var $tfoot = $( api.table().node() ).find( 'tfoot tr' );
 		if ( ! $tfoot.length ) { return; }
 
@@ -58,6 +59,7 @@
 				.reduce( function ( a, b ) { return a + numFromCell( b ); }, 0 );
 			$( this ).text( den > 0 ? ( num / den * 100 ).toFixed( 1 ) + '%' : '0%' );
 		} );
+		} catch ( e ) { /* footer update failed silently */ }
 	}
 
 	function initDataTables() {

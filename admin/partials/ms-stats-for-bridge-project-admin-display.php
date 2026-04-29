@@ -36,6 +36,11 @@ if ( $ts_from && $ts_to ) {
 
 $cert_user_id = isset( $_GET['cert_user_id'] ) ? (int) $_GET['cert_user_id'] : 0;
 
+// Brand colours for inline bar styles (avoids CSS interpolation issues).
+$_stm          = get_option( 'stm_lms_settings', array() );
+$ms_bar_blue   = sanitize_hex_color( $_stm['main_color'] ?? '' ) ?: '#385bce';
+$ms_bar_green  = sanitize_hex_color( $_stm['secondary_color'] ?? '' ) ?: '#17d292';
+
 $cert_users = array();
 if ( 'user_certificates' === $active_tab ) {
 	$cert_users = $wpdb->get_results(
@@ -306,7 +311,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 								<td><?php echo esc_html( $row->completed ); ?></td>
 								<td>
 									<div class="ms-stats-bar-wrap">
-										<div class="ms-stats-bar"><div class="ms-stats-bar-fill ms-stats-bar-fill--blue" style="width:<?php echo esc_attr( min( 100, (float) $row->completion_rate ) ); ?>%"></div></div>
+										<div class="ms-stats-bar"><div class="ms-stats-bar-fill" style="width:<?php echo esc_attr( min( 100, (float) $row->completion_rate ) ); ?>%;background:<?php echo esc_attr( $ms_bar_blue ); ?>"></div></div>
 										<?php echo esc_html( $row->completion_rate ?? 0 ); ?>%
 									</div>
 								</td>
@@ -375,7 +380,7 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 								<td><?php echo esc_html( $row->passed_attempts ); ?></td>
 								<td>
 									<div class="ms-stats-bar-wrap">
-										<div class="ms-stats-bar"><div class="ms-stats-bar-fill ms-stats-bar-fill--green" style="width:<?php echo esc_attr( min( 100, (float) $row->pass_rate ) ); ?>%"></div></div>
+										<div class="ms-stats-bar"><div class="ms-stats-bar-fill" style="width:<?php echo esc_attr( min( 100, (float) $row->pass_rate ) ); ?>%;background:<?php echo esc_attr( $ms_bar_green ); ?>"></div></div>
 										<?php echo esc_html( $row->pass_rate ?? 0 ); ?>%
 									</div>
 								</td>
@@ -498,7 +503,10 @@ $base_url = admin_url( 'admin.php?page=' . $page_slug . '&tab=' . $active_tab );
 							foreach ( $rows as $row ) : ?>
 								<tr>
 									<?php if ( $first ) : ?>
-										<td rowspan="<?php echo esc_attr( $count ); ?>" style="vertical-align:top;font-weight:600;border-right:2px solid #dcdcde;"><?php echo esc_html( $row->display_name ); ?></td>
+										<td rowspan="<?php echo esc_attr( $count ); ?>" style="vertical-align:top;border-right:2px solid #dcdcde;">
+											<span style="font-weight:600;"><?php echo esc_html( $row->display_name ); ?></span>
+											<br><small style="color:#6b7280;font-weight:400;"><?php echo esc_html( $count ); ?> <?php echo esc_html( $count === 1 ? __( 'certificate', 'ms-stats-for-bridge-project' ) : __( 'certificates', 'ms-stats-for-bridge-project' ) ); ?></small>
+										</td>
 										<td rowspan="<?php echo esc_attr( $count ); ?>" style="vertical-align:top;border-right:2px solid #dcdcde;"><?php echo esc_html( $row->user_email ); ?></td>
 										<?php $first = false; ?>
 									<?php endif; ?>
